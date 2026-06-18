@@ -3,10 +3,12 @@ package com.example.carapp.ui.screens
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -20,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.example.carapp.data.model.Car
 import com.example.carapp.data.model.MaintenanceRecord
 import com.example.carapp.data.model.ServiceType
+import com.example.carapp.ui.theme.serviceTypeColor
 import com.example.carapp.viewmodel.CarViewModel
 import com.example.carapp.viewmodel.MaintenanceViewModel
 import kotlinx.coroutines.launch
@@ -221,15 +224,26 @@ private fun ExpandableRecordCard(record: MaintenanceRecord, onEdit: () -> Unit) 
     var expanded by remember { mutableStateOf(false) }
     val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
     val currency = NumberFormat.getCurrencyInstance()
+    val serviceColor = serviceTypeColor(record.serviceType)
 
     ElevatedCard(
-        modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
+        modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Always-visible header
             Row(verticalAlignment = Alignment.CenterVertically) {
-                ServiceTypeIcon(record.serviceType, modifier = Modifier.size(26.dp))
-                Spacer(Modifier.width(10.dp))
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(serviceColor.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ServiceTypeIcon(record.serviceType, modifier = Modifier.size(22.dp),
+                        tint = serviceColor)
+                }
+                Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(record.displayServiceName, fontWeight = FontWeight.SemiBold)
                     Text(
@@ -243,7 +257,7 @@ private fun ExpandableRecordCard(record: MaintenanceRecord, onEdit: () -> Unit) 
                         currency.format(record.cost),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = serviceColor
                     )
                     Spacer(Modifier.width(8.dp))
                 }

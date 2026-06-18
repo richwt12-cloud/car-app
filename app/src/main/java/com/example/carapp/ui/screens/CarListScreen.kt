@@ -1,12 +1,17 @@
 package com.example.carapp.ui.screens
 
-import androidx.compose.animation.*
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -14,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,65 +37,71 @@ fun CarListScreen(
 ) {
     val cars by carViewModel.cars.collectAsState()
     val selectedCarId by carViewModel.selectedCarId.collectAsState()
-
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Cars") },
+                title = {
+                    Column {
+                        Text("My Garage", style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold)
+                        Text("${cars.size} car${if (cars.size != 1) "s" else ""}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNavigateToAddCar) {
-                Icon(Icons.Default.Add, "Add car")
-            }
+            ExtendedFloatingActionButton(
+                onClick = onNavigateToAddCar,
+                icon = { Icon(Icons.Default.Add, null) },
+                text = { Text("Add Car") }
+            )
         }
     ) { paddingValues ->
         if (cars.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize().padding(paddingValues),
+                contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.DirectionsCar, null,
-                        modifier = Modifier.size(72.dp),
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text("No cars added yet", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Tap + to add your first car",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Box(
+                        modifier = Modifier.size(100.dp)
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.DirectionsCar, null, modifier = Modifier.size(56.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
+                    Spacer(Modifier.height(24.dp))
+                    Text("Your garage is empty", style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Tap + to add your first car",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 items(cars, key = { it.id }) { car ->
+                    val isSelected = car.id == (selectedCarId ?: cars.firstOrNull()?.id)
                     SwipeableCarCard(
                         car = car,
-                        isSelected = car.id == (selectedCarId ?: cars.firstOrNull()?.id),
+                        isSelected = isSelected,
                         modifier = Modifier.animateItemPlacement(tween(300)),
                         onEdit = { onNavigateToEditCar(car.id) },
-                        onSelect = {
-                            carViewModel.selectCar(car.id)
-                            onNavigateToHistory()
-                        },
+                        onSelect = { carViewModel.selectCar(car.id); onNavigateToHistory() },
                         onDelete = {
                             carViewModel.deleteCar(car)
                             scope.launch {
@@ -121,10 +133,8 @@ private fun SwipeableCarCard(
 
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                showDeleteDialog = true
-                false // Don't dismiss yet — wait for confirmation
-            } else false
+            if (value == SwipeToDismissBoxValue.EndToStart) { showDeleteDialog = true; false }
+            else false
         },
         positionalThreshold = { it * 0.4f }
     )
@@ -134,43 +144,35 @@ private fun SwipeableCarCard(
         modifier = modifier,
         backgroundContent = {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(MaterialTheme.shapes.medium)
-                    .padding(horizontal = 4.dp),
+                modifier = Modifier.fillMaxSize()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.errorContainer),
                 contentAlignment = Alignment.CenterEnd
             ) {
-                Row(
+                Row(modifier = Modifier.padding(end = 24.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(end = 20.dp)
-                ) {
-                    Icon(Icons.Default.Delete, null, tint = Color.White)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Delete", color = Color.White, fontWeight = FontWeight.Medium)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.Delete, null,
+                        tint = MaterialTheme.colorScheme.onErrorContainer)
+                    Text("Remove", color = MaterialTheme.colorScheme.onErrorContainer,
+                        fontWeight = FontWeight.Medium)
                 }
             }
-        },
-        content = {
-            CarCard(
-                car = car,
-                isSelected = isSelected,
-                onEdit = onEdit,
-                onSelect = onSelect
-            )
         }
-    )
+    ) {
+        CarCard(car = car, isSelected = isSelected, onEdit = onEdit, onSelect = onSelect)
+    }
 
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             icon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Delete Car?") },
-            text = { Text("This will permanently delete ${car.year} ${car.make} ${car.model} and all its maintenance records.") },
+            title = { Text("Remove Car?") },
+            text = { Text("This will permanently delete ${car.year} ${car.make} ${car.model} and all its records.") },
             confirmButton = {
-                TextButton(
-                    onClick = { onDelete(); showDeleteDialog = false },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text("Delete") }
+                TextButton(onClick = { onDelete(); showDeleteDialog = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error)) { Text("Remove") }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
@@ -180,80 +182,115 @@ private fun SwipeableCarCard(
 }
 
 @Composable
-private fun CarCard(
-    car: Car,
-    isSelected: Boolean,
-    onEdit: () -> Unit,
-    onSelect: () -> Unit
-) {
-    ElevatedCard(
+private fun CarCard(car: Car, isSelected: Boolean, onEdit: () -> Unit, onSelect: () -> Unit) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val gradient = Brush.linearGradient(
+        colors = listOf(primaryColor, primaryColor.copy(alpha = 0.6f))
+    )
+
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .then(
-                if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium)
-                else Modifier
-            )
+            .then(if (isSelected) Modifier.border(2.dp, primaryColor, RoundedCornerShape(20.dp))
+                  else Modifier),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 6.dp else 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.DirectionsCar,
-                    contentDescription = null,
-                    tint = if (isSelected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(36.dp)
-                )
-                Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "${car.year} ${car.make} ${car.model}",
+        Column {
+            // Gradient header
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(gradient)
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+            ) {
+                Icon(Icons.Default.DirectionsCar, null,
+                    modifier = Modifier.align(Alignment.CenterEnd).size(60.dp),
+                    tint = Color.White.copy(alpha = 0.15f))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(48.dp).clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("${car.year % 100}",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (isSelected) {
-                            Spacer(Modifier.width(8.dp))
-                            Badge(containerColor = MaterialTheme.colorScheme.primary) {
-                                Text("Active", style = MaterialTheme.typography.labelSmall)
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White)
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("${car.make} ${car.model}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            if (isSelected) {
+                                Surface(shape = RoundedCornerShape(50.dp),
+                                    color = Color.White.copy(alpha = 0.25f)) {
+                                    Text("Active", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.White, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            if (car.color.isNotBlank()) {
+                                Text(car.color, style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.8f))
                             }
                         }
                     }
-                    if (car.color.isNotBlank()) {
-                        Text(car.color, style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    IconButton(onClick = onEdit,
+                        colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)) {
+                        Icon(Icons.Default.Edit, "Edit", modifier = Modifier.size(20.dp))
                     }
                 }
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, "Edit car")
+            }
+
+            // Stats row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                StatColumn("Mileage", "%,d mi".format(car.currentMileage),
+                    Modifier.weight(1f))
+                if (car.licensePlate.isNotBlank()) {
+                    VerticalDivider(modifier = Modifier.height(32.dp))
+                    StatColumn("Plate", car.licensePlate, Modifier.weight(1f))
+                }
+                if (car.vin.isNotBlank()) {
+                    VerticalDivider(modifier = Modifier.height(32.dp))
+                    StatColumn("VIN", "···${car.vin.takeLast(4)}", Modifier.weight(1f))
                 }
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                InfoPair("Mileage", "%,d mi".format(car.currentMileage))
-                if (car.licensePlate.isNotBlank()) InfoPair("Plate", car.licensePlate)
-                if (car.vin.isNotBlank()) InfoPair("VIN", car.vin.takeLast(6))
-            }
-
-            Spacer(Modifier.height(10.dp))
             Button(
                 onClick = onSelect,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .height(44.dp),
+                shape = RoundedCornerShape(10.dp)
             ) {
                 Icon(Icons.Default.History, null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("View History")
+                Spacer(Modifier.width(8.dp))
+                Text("View Maintenance History")
             }
         }
     }
 }
 
 @Composable
-private fun InfoPair(label: String, value: String) {
-    Column {
+private fun StatColumn(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
         Text(label, style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
     }
 }
