@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diesel Car Maintenance Tracker</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #f59e0b;
+    --accent2: #3b82f6;
+    --diesel: #10b981;
+    --danger: #ef4444;
+    --warn: #f97316;
+    --ok: #22c55e;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+  /* Layout */
+  .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 24px 16px; display: flex; flex-direction: column; gap: 8px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .main { padding: 32px; overflow-y: auto; }
+
+  /* Sidebar */
+  .logo { display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin-bottom: 16px; }
+  .logo-icon { width: 38px; height: 38px; background: linear-gradient(135deg, var(--accent), #d97706); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .logo-text { font-size: 14px; font-weight: 700; line-height: 1.2; }
+  .logo-sub { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .nav-section { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; padding: 4px 12px; margin-top: 8px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.15s; color: var(--muted); }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(245,158,11,0.15); color: var(--accent); }
+  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+  /* Car card in sidebar */
+  .car-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 8px; cursor: pointer; }
+  .car-name { font-weight: 600; font-size: 14px; }
+  .car-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .diesel-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(16,185,129,0.15); color: var(--diesel); border: 1px solid rgba(16,185,129,0.3); border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-top: 6px; }
+
+  /* Header */
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+  .page-title { font-size: 24px; font-weight: 700; }
+  .page-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: #d97706; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* Stats row */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .stat-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .stat-value { font-size: 26px; font-weight: 700; margin-top: 4px; }
+  .stat-value.ok { color: var(--ok); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.danger { color: var(--danger); }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* Maintenance cards */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .badge { display: inline-flex; align-items: center; justify-content: center; background: var(--surface2); border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+  .badge.diesel-tag { background: rgba(16,185,129,0.15); color: var(--diesel); border: 1px solid rgba(16,185,129,0.3); }
+
+  .maintenance-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-bottom: 32px; }
+  .maint-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: all 0.15s; position: relative; }
+  .maint-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .maint-card.overdue { border-left: 3px solid var(--danger); }
+  .maint-card.due-soon { border-left: 3px solid var(--warn); }
+  .maint-card.ok { border-left: 3px solid var(--ok); }
+  .maint-card.diesel-item { background: linear-gradient(135deg, var(--surface) 85%, rgba(16,185,129,0.05)); }
+
+  .maint-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .maint-name { font-size: 14px; font-weight: 600; }
+  .maint-category { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .status-dot.overdue { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+  .status-dot.due-soon { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+  .status-dot.ok { background: var(--ok); }
+
+  .maint-body { margin-top: 12px; }
+  .progress-bar { height: 5px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin: 8px 0; }
+  .progress-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+  .progress-fill.ok { background: var(--ok); }
+  .progress-fill.warn { background: var(--warn); }
+  .progress-fill.danger { background: var(--danger); }
+
+  .maint-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .maint-info-row { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+  .maint-info-item { font-size: 12px; color: var(--muted); }
+  .maint-info-item strong { color: var(--text); }
+  .diesel-flag { position: absolute; top: 10px; right: 10px; font-size: 10px; background: rgba(16,185,129,0.15); color: var(--diesel); border-radius: 4px; padding: 2px 6px; font-weight: 600; }
+
+  /* History */
+  .history-table { width: 100%; border-collapse: collapse; }
+  .history-table th { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  .history-table td { padding: 12px; font-size: 13px; border-bottom: 1px solid rgba(46,51,80,0.5); }
+  .history-table tr:hover td { background: var(--surface2); }
+  .history-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: min(560px, calc(100vw - 40px)); max-height: 90vh; overflow-y: auto; transform: scale(0.95); transition: transform 0.2s; }
+  .modal-overlay.open .modal { transform: scale(1); }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1/-1; }
+  label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  input, select, textarea { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: var(--text); font-size: 13px; width: 100%; transition: border-color 0.15s; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  select option { background: var(--surface); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* Detail panel */
+  .detail-panel { position: fixed; right: 0; top: 0; height: 100vh; width: min(420px, 100vw); background: var(--surface); border-left: 1px solid var(--border); z-index: 90; padding: 28px; overflow-y: auto; transform: translateX(100%); transition: transform 0.25s ease; }
+  .detail-panel.open { transform: translateX(0); }
+  .detail-close { position: absolute; top: 20px; right: 20px; background: var(--surface2); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; color: var(--muted); font-size: 18px; display: flex; align-items: center; justify-content: center; }
+  .detail-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .detail-section { margin-top: 20px; }
+  .detail-section-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .info-list { display: flex; flex-direction: column; gap: 8px; }
+  .info-row { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid rgba(46,51,80,0.5); }
+  .info-row:last-child { border-bottom: none; }
+  .info-key { color: var(--muted); }
+  .tips-list { display: flex; flex-direction: column; gap: 8px; }
+  .tip-item { background: var(--surface2); border-radius: 8px; padding: 10px 12px; font-size: 13px; line-height: 1.5; display: flex; gap: 8px; }
+  .tip-icon { flex-shrink: 0; }
+
+  /* Status chips */
+  .chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+  .chip.overdue { background: rgba(239,68,68,0.15); color: var(--danger); }
+  .chip.due-soon { background: rgba(249,115,22,0.15); color: var(--warn); }
+  .chip.ok { background: rgba(34,197,94,0.15); color: var(--ok); }
+
+  /* Views */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Dashboard mileage input */
+  .mileage-banner { background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 28px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .mileage-banner .big-num { font-size: 32px; font-weight: 800; color: var(--accent); }
+  .mileage-input-wrap { display: flex; gap: 8px; align-items: center; }
+  .mileage-input-wrap input { width: 140px; font-size: 15px; font-weight: 600; }
+
+  /* Timeline */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item { display: flex; gap: 16px; }
+  .tl-line { display: flex; flex-direction: column; align-items: center; }
+  .tl-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 4px; }
+  .tl-bar { width: 2px; background: var(--border); flex: 1; margin: 4px 0; min-height: 20px; }
+  .tl-content { flex: 1; padding-bottom: 16px; }
+  .tl-date { font-size: 11px; color: var(--muted); }
+  .tl-title { font-size: 13px; font-weight: 600; }
+  .tl-note { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  @media (max-width: 768px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .main { padding: 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .maintenance-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">⛽</div>
+    <div>
+      <div class="logo-text">DieselTrack</div>
+      <div class="logo-sub">Maintenance Tracker</div>
+    </div>
+  </div>
+
+  <div id="sidebarCarCard" class="car-card" onclick="openView('profile')">
+    <div class="car-name" id="sbCarName">My Diesel Car</div>
+    <div class="car-meta" id="sbCarMeta">Set up your vehicle →</div>
+    <div class="diesel-badge">🔧 Diesel Engine</div>
+  </div>
+
+  <div class="nav-section">Navigation</div>
+  <div class="nav-item active" data-view="dashboard" onclick="openView('dashboard')"><span class="icon">📊</span> Dashboard</div>
+  <div class="nav-item" data-view="maintenance" onclick="openView('maintenance')"><span class="icon">🔧</span> Maintenance</div>
+  <div class="nav-item" data-view="history" onclick="openView('history')"><span class="icon">📋</span> Service History</div>
+  <div class="nav-item" data-view="profile" onclick="openView('profile')"><span class="icon">🚗</span> Vehicle Profile</div>
+
+  <div class="nav-section" style="margin-top:auto; padding-top:16px;">Info</div>
+  <div class="nav-item" onclick="showAbout()"><span class="icon">ℹ️</span> About</div>
+</aside>
+
+<!-- Main content -->
+<main class="main">
+
+  <!-- DASHBOARD VIEW -->
+  <div id="view-dashboard" class="view active">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub" id="dashSub">Overview of your vehicle maintenance</div>
+      </div>
+      <button class="btn btn-primary" onclick="openLogModal()">+ Log Service</button>
+    </div>
+
+    <div class="mileage-banner">
+      <div>
+        <div style="font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;">Current Odometer</div>
+        <div class="big-num" id="displayMileage">0 km</div>
+      </div>
+      <div class="mileage-input-wrap">
+        <input type="number" id="mileageInput" placeholder="Update mileage..." min="0">
+        <button class="btn btn-primary" onclick="updateMileage()">Update</button>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div class="section-header">
+      <div class="section-title">⚠️ Needs Attention</div>
+    </div>
+    <div class="maintenance-grid" id="urgentGrid"></div>
+
+    <div class="section-header" style="margin-top:8px;">
+      <div class="section-title">📅 Upcoming (Next 3 Months)</div>
+    </div>
+    <div class="maintenance-grid" id="upcomingGrid"></div>
+  </div>
+
+  <!-- MAINTENANCE VIEW -->
+  <div id="view-maintenance" class="view">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Maintenance Schedule</div>
+        <div class="page-sub">All maintenance items for your diesel vehicle</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <select id="filterStatus" onchange="renderMaintenance()" style="width:auto;">
+          <option value="">All Status</option>
+          <option value="overdue">Overdue</option>
+          <option value="due-soon">Due Soon</option>
+          <option value="ok">OK</option>
+        </select>
+        <select id="filterType" onchange="renderMaintenance()" style="width:auto;">
+          <option value="">All Types</option>
+          <option value="diesel">Diesel Specific</option>
+          <option value="general">General</option>
+        </select>
+        <button class="btn btn-primary" onclick="openAddMaintModal()">+ Add Item</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px; display:flex; gap:10px; flex-wrap:wrap;">
+      <span class="chip ok">● Up to Date</span>
+      <span class="chip due-soon">● Due Soon (&lt; 30 days / 500 km)</span>
+      <span class="chip overdue">● Overdue</span>
+      <span class="badge diesel-tag">⛽ Diesel Specific</span>
+    </div>
+
+    <div class="maintenance-grid" id="maintGrid"></div>
+  </div>
+
+  <!-- HISTORY VIEW -->
+  <div id="view-history" class="view">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Service History</div>
+        <div class="page-sub">Complete log of all maintenance performed</div>
+      </div>
+      <button class="btn btn-primary" onclick="openLogModal()">+ Log Service</button>
+    </div>
+
+    <div class="history-wrap">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Service</th>
+            <th>Mileage</th>
+            <th>Cost</th>
+            <th>Notes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:28px;">
+      <div class="section-title" style="margin-bottom:14px;">📅 Timeline</div>
+      <div class="timeline" id="historyTimeline"></div>
+    </div>
+  </div>
+
+  <!-- PROFILE VIEW -->
+  <div id="view-profile" class="view">
+    <div class="page-header">
+      <div class="page-title">Vehicle Profile</div>
+    </div>
+    <div style="max-width:600px;">
+      <div class="form-grid" style="gap:16px;">
+        <div class="form-group">
+          <label>Make / Brand</label>
+          <input type="text" id="pMake" placeholder="e.g. Toyota, Ford, VW...">
+        </div>
+        <div class="form-group">
+          <label>Model</label>
+          <input type="text" id="pModel" placeholder="e.g. Hilux, Ranger...">
+        </div>
+        <div class="form-group">
+          <label>Year</label>
+          <input type="number" id="pYear" placeholder="e.g. 2020" min="1990" max="2030">
+        </div>
+        <div class="form-group">
+          <label>License Plate</label>
+          <input type="text" id="pPlate" placeholder="e.g. B 1234 CD">
+        </div>
+        <div class="form-group">
+          <label>Engine Displacement</label>
+          <input type="text" id="pEngine" placeholder="e.g. 2.5L, 2500cc">
+        </div>
+        <div class="form-group">
+          <label>Diesel Type</label>
+          <select id="pDieselType">
+            <option value="standard">Standard Diesel</option>
+            <option value="euro5">Euro 5 (with DPF)</option>
+            <option value="euro6">Euro 6 (DPF + SCR/AdBlue)</option>
+            <option value="cdi">CDI (Common Rail Direct Injection)</option>
+            <option value="tdi">TDI (Turbocharged Direct Injection)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Turbo</label>
+          <select id="pTurbo">
+            <option value="yes">Yes — Turbocharged</option>
+            <option value="no">No — Naturally Aspirated</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Current Odometer (km)</label>
+          <input type="number" id="pMileage" placeholder="e.g. 50000" min="0">
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="pNotes" rows="3" placeholder="Any special notes about your vehicle..."></textarea>
+        </div>
+      </div>
+      <div style="margin-top:20px; display:flex; gap:10px;">
+        <button class="btn btn-primary" onclick="saveProfile()">💾 Save Profile</button>
+        <button class="btn btn-secondary" onclick="resetToDefaults()">↺ Reset Intervals</button>
+      </div>
+      <div id="profileSaved" style="display:none; color:var(--ok); font-size:13px; margin-top:10px;">✓ Profile saved successfully!</div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- Detail Panel -->
+<div id="detailPanel" class="detail-panel">
+  <button class="detail-close" onclick="closeDetail()">✕</button>
+  <div id="detailContent"></div>
+</div>
+
+<!-- Log Service Modal -->
+<div id="logModal" class="modal-overlay" onclick="closeModal('logModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">📋 Log Service</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Service Item</label>
+        <select id="logItem"></select>
+      </div>
+      <div class="form-group">
+        <label>Date Performed</label>
+        <input type="date" id="logDate">
+      </div>
+      <div class="form-group">
+        <label>Mileage at Service (km)</label>
+        <input type="number" id="logMileage" placeholder="e.g. 50000">
+      </div>
+      <div class="form-group">
+        <label>Cost (optional)</label>
+        <input type="number" id="logCost" placeholder="e.g. 250000">
+      </div>
+      <div class="form-group">
+        <label>Workshop / Mechanic</label>
+        <input type="text" id="logShop" placeholder="e.g. Bengkel Maju">
+      </div>
+      <div class="form-group full">
+        <label>Notes</label>
+        <textarea id="logNotes" rows="2" placeholder="Any observations or details..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('logModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLog()">Save Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Maintenance Modal -->
+<div id="addMaintModal" class="modal-overlay" onclick="closeModal('addMaintModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="addMaintTitle">+ Add Maintenance Item</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Item Name</label>
+        <input type="text" id="amName" placeholder="e.g. Air Filter Replacement">
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="amCategory">
+          <option value="Engine">Engine</option>
+          <option value="Diesel System">Diesel System</option>
+          <option value="Fuel System">Fuel System</option>
+          <option value="Exhaust System">Exhaust System</option>
+          <option value="Cooling">Cooling</option>
+          <option value="Transmission">Transmission</option>
+          <option value="Brakes">Brakes</option>
+          <option value="Electrical">Electrical</option>
+          <option value="Tyres">Tyres</option>
+          <option value="Fluid">Fluid</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Type</label>
+        <select id="amType">
+          <option value="general">General</option>
+          <option value="diesel">Diesel Specific</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Interval (km)</label>
+        <input type="number" id="amIntervalKm" placeholder="e.g. 10000">
+      </div>
+      <div class="form-group">
+        <label>Interval (months)</label>
+        <input type="number" id="amIntervalMonths" placeholder="e.g. 6">
+      </div>
+      <div class="form-group">
+        <label>Last Done Date</label>
+        <input type="date" id="amLastDate">
+      </div>
+      <div class="form-group">
+        <label>Last Done Mileage (km)</label>
+        <input type="number" id="amLastMileage" placeholder="e.g. 45000">
+      </div>
+      <div class="form-group full">
+        <label>Description / Tips</label>
+        <textarea id="amDesc" rows="2" placeholder="Any notes about this maintenance item..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('addMaintModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMaintItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Data ───────────────────────────────────────────────────────────────────────
+const DEFAULT_ITEMS = [
+  // ═══ DIESEL SPECIFIC ═══
+  { id: 'diesel-oil', name: 'Engine Oil Change (Diesel)', category: 'Engine', type: 'diesel', intervalKm: 10000, intervalMonths: 6, desc: 'Use diesel-rated oil (ACEA C3/C4 or API CJ-4). Diesel engines produce more soot and acids, requiring more frequent changes. Check oil level monthly.', tips: ['Always use diesel-spec oil (e.g. 5W-30 ACEA C3)', 'Check dipstick every 1,000 km — diesel engines can consume oil', 'Dark black oil color is normal for diesel'] },
+  { id: 'diesel-filter', name: 'Diesel Fuel Filter', category: 'Fuel System', type: 'diesel', intervalKm: 30000, intervalMonths: 12, desc: 'Diesel fuel filters clog faster than petrol. A clogged filter causes poor starting, loss of power, and can damage injectors. Drain water separator when replacing.', tips: ['Drain water separator every 10,000 km even if not replacing', 'Use original or high-quality filter — cheap filters damage injectors', 'If car is hard to start or lacks power, check filter first'] },
+  { id: 'glow-plugs', name: 'Glow Plugs Inspection/Replace', category: 'Engine', type: 'diesel', intervalKm: 0, intervalMonths: 24, desc: 'Glow plugs pre-heat the combustion chamber for cold starting. Faulty plugs cause hard starting, white smoke, and rough idle especially when cold. Check every 2 years.', tips: ['Hard cold starts or white smoke = likely glow plug issue', 'Replace all 4 at once for even heating', 'Test with a multimeter — should read ~0.5–2 ohms'] },
+  { id: 'dpf', name: 'DPF Cleaning / Regeneration Check', category: 'Exhaust System', type: 'diesel', intervalKm: 50000, intervalMonths: 18, desc: 'Diesel Particulate Filter traps soot. If DPF light is on, initiate active regeneration. Forced cleaning every 50,000 km. Avoid short trips which prevent passive regen.', tips: ['DPF warning light? Take highway driving at 80+ km/h for 30 min', 'Short city trips block DPF — take occasional highway runs', 'Do not ignore DPF light — complete blockage costs millions to fix'] },
+  { id: 'egr', name: 'EGR Valve Cleaning', category: 'Engine', type: 'diesel', intervalKm: 50000, intervalMonths: 24, desc: 'EGR recirculates exhaust gas to reduce NOx. Diesel soot builds up and jams the valve, causing rough idle, black smoke, and loss of power. Clean or replace every 50,000 km.', tips: ['Use EGR cleaner spray every 30,000 km as preventive maintenance', 'Symptoms: rough idle, hesitation, increased fuel consumption', 'A stuck-open EGR causes black smoke; stuck-closed causes rough idle'] },
+  { id: 'injector', name: 'Diesel Injector Service', category: 'Fuel System', type: 'diesel', intervalKm: 80000, intervalMonths: 48, desc: 'Common rail injectors wear out and lose precise spray pattern, causing rough running, excess smoke, and poor fuel economy. Test and calibrate or replace as needed.', tips: ['Use quality diesel fuel to extend injector life', 'Add injector cleaner additive every 15,000 km', 'Symptoms of worn injectors: white/blue smoke, rough idle, increased fuel use'] },
+  { id: 'turbo', name: 'Turbocharger Inspection', category: 'Engine', type: 'diesel', intervalKm: 60000, intervalMonths: 36, desc: 'Diesel turbos run hotter and at higher pressure than petrol. Check for play, oil leaks, and noise. Let engine idle 2 min before shutdown to cool turbo.', tips: ['Always idle for 2 min before switching off to cool turbo oil', 'Check intercooler hoses for cracks every year', 'Blue smoke at startup = turbo oil seal wearing out', 'Use full synthetic oil for turbocharged diesels'] },
+  { id: 'adblue', name: 'AdBlue / DEF Top-Up (Euro 6)', category: 'Exhaust System', type: 'diesel', intervalKm: 15000, intervalMonths: 6, desc: 'Euro 6 diesels use Selective Catalytic Reduction (SCR). AdBlue is injected into exhaust to reduce NOx. Car will refuse to start if tank runs dry. Check level regularly.', tips: ['Never let AdBlue run below 10% — car may not restart', 'Use only OEM-grade AdBlue (ISO 22241)', 'AdBlue tank is usually near the diesel filler cap (blue cap)'] },
+  { id: 'timing-belt-d', name: 'Timing Belt / Chain (Diesel)', category: 'Engine', type: 'diesel', intervalKm: 100000, intervalMonths: 60, desc: 'Diesel timing belts often have shorter intervals than petrol due to higher compression loads. Failure causes catastrophic engine damage. Do not delay this service.', tips: ['Replace water pump at same time — it uses same belt', 'Do not exceed manufacturer interval by even 1,000 km', 'Chain engines: listen for rattling at startup which signals stretch'] },
+  { id: 'oil-separator', name: 'Oil Separator / Breather', category: 'Engine', type: 'diesel', intervalKm: 60000, intervalMonths: 36, desc: 'Diesel engines produce significant blow-by gases. A blocked oil separator causes oil leaks, blue smoke, and turbo issues. Clean or replace the PCV/oil separator.', tips: ['Inspect intake hoses for oil deposits — sign of blocked separator', 'Clean with throttle body cleaner every 40,000 km', 'Blocked separator also increases oil consumption'] },
+
+  // ═══ GENERAL ═══
+  { id: 'oil-filter', name: 'Oil Filter', category: 'Engine', type: 'general', intervalKm: 10000, intervalMonths: 6, desc: 'Replace oil filter with every oil change. A diesel oil filter captures more soot particles than a petrol filter.', tips: ['Always replace with oil change', 'Use OEM or premium filter — diesel filters have higher micron ratings'] },
+  { id: 'air-filter', name: 'Air Filter', category: 'Engine', type: 'general', intervalKm: 30000, intervalMonths: 12, desc: 'Diesel engines breathe more air per cycle. A dirty air filter reduces power and increases fuel consumption. Inspect more often in dusty environments.', tips: ['Inspect every 10,000 km in dusty conditions', 'A clogged air filter increases fuel consumption by up to 10%', 'Clean reusable filters with compressed air between replacements'] },
+  { id: 'cabin-filter', name: 'Cabin Air Filter', category: 'Other', type: 'general', intervalKm: 20000, intervalMonths: 12, desc: 'Keeps cabin air clean. Replace annually or when A/C starts smelling.', tips: ['Check when A/C efficiency drops', 'Dusty environments require more frequent replacement'] },
+  { id: 'coolant', name: 'Coolant Flush', category: 'Cooling', type: 'general', intervalKm: 0, intervalMonths: 24, desc: 'Diesel engines run hotter. Old coolant becomes acidic and corrodes the cooling system. Use coolant with anti-corrosion additives compatible with diesel engines.', tips: ['Use OAT or HOAT coolant compatible with diesel engines', 'Check coolant level monthly — diesel overheating is rapid', 'Never open radiator cap when engine is hot'] },
+  { id: 'brake-fluid', name: 'Brake Fluid Change', category: 'Brakes', type: 'general', intervalKm: 0, intervalMonths: 24, desc: 'Brake fluid absorbs moisture over time, lowering its boiling point and reducing braking performance. Change every 2 years regardless of mileage.', tips: ['Use DOT 4 or DOT 5.1 as specified', 'Test moisture content with a brake fluid tester strip'] },
+  { id: 'trans-fluid', name: 'Transmission Fluid', category: 'Transmission', type: 'general', intervalKm: 60000, intervalMonths: 36, desc: 'Keep transmission running smoothly. Diesel torque puts more stress on transmission than petrol equivalents.', tips: ['Check for dark/burnt smell — sign it needs changing', 'Diesel vehicles generate more torque, stressing transmission more'] },
+  { id: 'power-steering', name: 'Power Steering Fluid', category: 'Fluid', type: 'general', intervalKm: 0, intervalMonths: 24, desc: 'Check level every 6 months. Change every 2 years if hydraulic steering is fitted.', tips: ['If steering feels heavy, check fluid level first', 'EPS (electric) systems do not require this service'] },
+  { id: 'battery', name: 'Battery Check / Replace', category: 'Electrical', type: 'general', intervalKm: 0, intervalMonths: 24, desc: 'Diesel starters draw significantly more current than petrol. A weak battery causes hard starting. Test battery health every 2 years with a load tester.', tips: ['Diesel requires a higher CCA (Cold Cranking Amps) battery', 'Test battery before rainy season — cold weather magnifies weakness', 'Clean terminals with baking soda if corroded'] },
+  { id: 'tyre-rotation', name: 'Tyre Rotation', category: 'Tyres', type: 'general', intervalKm: 10000, intervalMonths: 6, desc: 'Rotate tyres to ensure even wear. Diesel vehicles are heavier, causing faster tyre wear.', tips: ['Check tyre pressure monthly — diesel vehicles are heavier', 'Inspect tread depth at each rotation (min 1.6mm legal, 3mm recommended)'] },
+  { id: 'tyre-balance', name: 'Wheel Balance & Alignment', category: 'Tyres', type: 'general', intervalKm: 20000, intervalMonths: 12, desc: 'Balance and alignment prevent uneven tyre wear and improve fuel economy. Check after hitting a pothole.', tips: ['Vibration at high speed = wheel balance issue', 'Car pulling to one side = alignment issue'] },
+  { id: 'brake-pads', name: 'Brake Pads Inspection', category: 'Brakes', type: 'general', intervalKm: 20000, intervalMonths: 12, desc: 'Inspect brake pad thickness. Diesel vehicles are heavier, wearing brakes faster. Replace when thickness is below 3mm.', tips: ['Squealing = wear indicator is touching rotor — replace immediately', 'Check both front and rear pads', 'Inspect brake disc for scoring and warping'] },
+  { id: 'spark-belts', name: 'Drive / Serpentine Belt', category: 'Engine', type: 'general', intervalKm: 60000, intervalMonths: 36, desc: 'Drives alternator, A/C compressor, and power steering pump. Cracking or glazing = replace immediately. Sudden breakage leaves you stranded.', tips: ['Check for cracks, fraying, or glazing at each service', 'If belt is making squealing noise, check tensioner too'] },
+  { id: 'spark-plugs-check', name: 'Spark Plug / Compression Check', category: 'Engine', type: 'general', intervalKm: 0, intervalMonths: 36, desc: 'Diesel engines have no spark plugs, but compression check every 3 years ensures no blown head gasket or worn rings.', tips: ['Low compression = worn rings or valves — significant repair', 'White smoke + sweet smell = coolant in cylinder (head gasket)'] },
+];
+
+const DEFAULT_PROFILE = {
+  make: '', model: '', year: '', plate: '', engine: '', dieselType: 'standard', turbo: 'yes', mileage: 0, notes: ''
+};
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let state = {
+  profile: { ...DEFAULT_PROFILE },
+  items: [],
+  history: [],
+  editingId: null
+};
+
+function load() {
+  try {
+    const saved = localStorage.getItem('dieseltrack_v2');
+    if (saved) state = JSON.parse(saved);
+    else {
+      state.items = DEFAULT_ITEMS.map(i => ({ ...i, lastDate: '', lastMileage: 0 }));
+    }
+  } catch(e) { state.items = DEFAULT_ITEMS.map(i => ({ ...i, lastDate: '', lastMileage: 0 })); }
+}
+
+function save() { localStorage.setItem('dieseltrack_v2', JSON.stringify(state)); }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function getStatus(item) {
+  const km = state.profile.mileage || 0;
+  const today = new Date();
+  let kmPct = 0, datePct = 0;
+
+  if (item.lastMileage && item.intervalKm) {
+    const due = item.lastMileage + item.intervalKm;
+    const elapsed = km - item.lastMileage;
+    kmPct = elapsed / item.intervalKm;
+  }
+
+  if (item.lastDate && item.intervalMonths) {
+    const last = new Date(item.lastDate);
+    const dueDate = new Date(last);
+    dueDate.setMonth(dueDate.getMonth() + item.intervalMonths);
+    const totalMs = dueDate - last;
+    const elapsedMs = today - last;
+    datePct = elapsedMs / totalMs;
+  }
+
+  const pct = Math.max(kmPct, datePct);
+  if (!item.lastDate && !item.lastMileage) return { status: 'ok', pct: 0, label: 'Never logged', color: 'ok' };
+  if (pct >= 1) return { status: 'overdue', pct: Math.min(pct, 1.5), label: 'Overdue!', color: 'danger' };
+  if (pct >= 0.8) return { status: 'due-soon', pct, label: 'Due Soon', color: 'warn' };
+  return { status: 'ok', pct, label: 'Up to date', color: 'ok' };
+}
+
+function getDueInfo(item) {
+  const km = state.profile.mileage || 0;
+  const today = new Date();
+  const parts = [];
+
+  if (item.lastMileage && item.intervalKm) {
+    const dueAt = item.lastMileage + item.intervalKm;
+    const remaining = dueAt - km;
+    if (remaining <= 0) parts.push(`${Math.abs(remaining).toLocaleString()} km overdue`);
+    else parts.push(`Due at ${dueAt.toLocaleString()} km (+${remaining.toLocaleString()} km)`);
+  } else if (item.intervalKm) {
+    parts.push(`Every ${item.intervalKm.toLocaleString()} km`);
+  }
+
+  if (item.lastDate && item.intervalMonths) {
+    const last = new Date(item.lastDate);
+    const dueDate = new Date(last);
+    dueDate.setMonth(dueDate.getMonth() + item.intervalMonths);
+    const diffDays = Math.round((dueDate - today) / 86400000);
+    if (diffDays < 0) parts.push(`${Math.abs(diffDays)}d overdue`);
+    else parts.push(`Due ${dueDate.toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'})}`);
+  } else if (item.intervalMonths) {
+    parts.push(`Every ${item.intervalMonths} months`);
+  }
+
+  return parts.join(' • ');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
+}
+
+function formatCurrency(n) {
+  if (!n) return '—';
+  return 'Rp ' + Number(n).toLocaleString('id-ID');
+}
+
+// ── Views ────────────────────────────────────────────────────────────────────
+function openView(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.view === view);
+  });
+  closeDetail();
+  if (view === 'dashboard') renderDashboard();
+  if (view === 'maintenance') renderMaintenance();
+  if (view === 'history') renderHistory();
+  if (view === 'profile') loadProfile();
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const km = state.profile.mileage || 0;
+  document.getElementById('displayMileage').textContent = km.toLocaleString('id-ID') + ' km';
+  document.getElementById('mileageInput').value = km || '';
+  const carName = [state.profile.year, state.profile.make, state.profile.model].filter(Boolean).join(' ');
+  document.getElementById('dashSub').textContent = carName || 'Set up your vehicle profile for personalized tracking';
+
+  const statuses = state.items.map(i => getStatus(i).status);
+  const overdue = statuses.filter(s => s === 'overdue').length;
+  const dueSoon = statuses.filter(s => s === 'due-soon').length;
+  const ok = statuses.filter(s => s === 'ok').length;
+
+  const statsGrid = document.getElementById('statsGrid');
+  statsGrid.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Total Items</div>
+      <div class="stat-value">${state.items.length}</div>
+      <div class="stat-sub">${state.items.filter(i=>i.type==='diesel').length} diesel-specific</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Overdue</div>
+      <div class="stat-value ${overdue > 0 ? 'danger' : 'ok'}">${overdue}</div>
+      <div class="stat-sub">${overdue > 0 ? 'Needs immediate attention' : 'All good!'}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Due Soon</div>
+      <div class="stat-value ${dueSoon > 0 ? 'warn' : 'ok'}">${dueSoon}</div>
+      <div class="stat-sub">Within 30 days or 500 km</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Up to Date</div>
+      <div class="stat-value ok">${ok}</div>
+      <div class="stat-sub">Services current</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Services Logged</div>
+      <div class="stat-value">${state.history.length}</div>
+      <div class="stat-sub">${state.history.length > 0 ? 'Last: ' + formatDate(state.history[0]?.date) : 'None logged yet'}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Spend</div>
+      <div class="stat-value" style="font-size:20px;">${formatCurrency(state.history.reduce((a,b)=>a+(Number(b.cost)||0),0))}</div>
+      <div class="stat-sub">Across all logged services</div>
+    </div>
+  `;
+
+  const urgentItems = state.items.filter(i => getStatus(i).status === 'overdue');
+  const urgentGrid = document.getElementById('urgentGrid');
+  if (urgentItems.length === 0) {
+    urgentGrid.innerHTML = '<div style="color:var(--ok);font-size:13px;padding:12px;">✓ No overdue items — great job!</div>';
+  } else {
+    urgentGrid.innerHTML = urgentItems.map(i => renderMaintCard(i)).join('');
+  }
+
+  const upcomingItems = state.items.filter(i => getStatus(i).status === 'due-soon');
+  const upcomingGrid = document.getElementById('upcomingGrid');
+  if (upcomingItems.length === 0) {
+    upcomingGrid.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px;">No items due in the next 3 months.</div>';
+  } else {
+    upcomingGrid.innerHTML = upcomingItems.map(i => renderMaintCard(i)).join('');
+  }
+
+  updateSidebar();
+}
+
+function updateSidebar() {
+  const carName = [state.profile.year, state.profile.make, state.profile.model].filter(Boolean).join(' ');
+  document.getElementById('sbCarName').textContent = carName || 'My Diesel Car';
+  document.getElementById('sbCarMeta').textContent = state.profile.plate || (state.profile.engine ? state.profile.engine + ' Diesel' : 'Click to set up profile');
+}
+
+function updateMileage() {
+  const val = parseInt(document.getElementById('mileageInput').value);
+  if (!isNaN(val) && val >= 0) {
+    state.profile.mileage = val;
+    document.getElementById('pMileage').value = val;
+    save();
+    renderDashboard();
+  }
+}
+
+// ── Maintenance ──────────────────────────────────────────────────────────────
+function renderMaintCard(item) {
+  const { status, pct, label } = getStatus(item);
+  const dueInfo = getDueInfo(item);
+  const pctDisplay = Math.min(Math.round(pct * 100), 100);
+  return `
+    <div class="maint-card ${status} ${item.type === 'diesel' ? 'diesel-item' : ''}" onclick="openDetail('${item.id}')">
+      ${item.type === 'diesel' ? '<span class="diesel-flag">⛽ DIESEL</span>' : ''}
+      <div class="maint-header">
+        <div>
+          <div class="maint-name">${item.name}</div>
+          <div class="maint-category">${item.category}</div>
+        </div>
+        <div class="status-dot ${status}"></div>
+      </div>
+      <div class="maint-body">
+        <div class="maint-meta">
+          <span><span class="chip ${status}">${label}</span></span>
+          <span style="font-size:12px;">${pctDisplay}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill ${status === 'overdue' ? 'danger' : status === 'due-soon' ? 'warn' : 'ok'}" style="width:${pctDisplay}%"></div></div>
+        <div class="maint-meta" style="margin-top:2px;"><span>${dueInfo}</span></div>
+        <div class="maint-info-row">
+          <div class="maint-info-item">Last: <strong>${item.lastDate ? formatDate(item.lastDate) : 'Never'}</strong></div>
+          ${item.lastMileage ? `<div class="maint-info-item">At: <strong>${Number(item.lastMileage).toLocaleString()} km</strong></div>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderMaintenance() {
+  const statusF = document.getElementById('filterStatus').value;
+  const typeF = document.getElementById('filterType').value;
+  let items = state.items;
+  if (statusF) items = items.filter(i => getStatus(i).status === statusF);
+  if (typeF) items = items.filter(i => i.type === typeF);
+
+  // Sort: overdue first, then due-soon, then ok
+  const order = { overdue: 0, 'due-soon': 1, ok: 2 };
+  items = items.slice().sort((a, b) => order[getStatus(a).status] - order[getStatus(b).status]);
+
+  document.getElementById('maintGrid').innerHTML = items.map(i => `
+    <div class="maint-card ${getStatus(i).status} ${i.type === 'diesel' ? 'diesel-item' : ''}" onclick="openDetail('${i.id}')">
+      ${i.type === 'diesel' ? '<span class="diesel-flag">⛽ DIESEL</span>' : ''}
+      <div class="maint-header">
+        <div>
+          <div class="maint-name">${i.name}</div>
+          <div class="maint-category">${i.category}</div>
+        </div>
+        <div class="status-dot ${getStatus(i).status}"></div>
+      </div>
+      <div class="maint-body">
+        <div class="maint-meta">
+          <span><span class="chip ${getStatus(i).status}">${getStatus(i).label}</span></span>
+          <span style="font-size:12px;">${Math.min(Math.round(getStatus(i).pct*100),100)}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill ${getStatus(i).status==='overdue'?'danger':getStatus(i).status==='due-soon'?'warn':'ok'}" style="width:${Math.min(Math.round(getStatus(i).pct*100),100)}%"></div></div>
+        <div class="maint-meta" style="margin-top:2px;">${getDueInfo(i)}</div>
+        <div class="maint-info-row">
+          <div class="maint-info-item">Last: <strong>${i.lastDate ? formatDate(i.lastDate) : 'Never'}</strong></div>
+          ${i.lastMileage ? `<div class="maint-info-item">At: <strong>${Number(i.lastMileage).toLocaleString()} km</strong></div>` : ''}
+          ${i.intervalKm ? `<div class="maint-info-item">Interval: <strong>${i.intervalKm.toLocaleString()} km</strong></div>` : ''}
+          ${i.intervalMonths ? `<div class="maint-info-item">/ <strong>${i.intervalMonths} mo</strong></div>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Detail Panel ──────────────────────────────────────────────────────────────
+function openDetail(id) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  const { status, label } = getStatus(item);
+
+  const historyForItem = state.history.filter(h => h.itemId === id);
+
+  document.getElementById('detailContent').innerHTML = `
+    <div style="margin-bottom:4px; font-size:11px; color:var(--muted);">
+      ${item.type === 'diesel' ? '<span class="badge diesel-tag" style="margin-bottom:8px;display:inline-block;">⛽ DIESEL SPECIFIC</span>' : ''}
+    </div>
+    <div class="detail-name">${item.name}</div>
+    <div style="font-size:13px; color:var(--muted); margin-bottom:12px;">${item.category}</div>
+    <span class="chip ${status}">${label}</span>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Service Intervals</div>
+      <div class="info-list">
+        ${item.intervalKm ? `<div class="info-row"><span class="info-key">Every (km)</span><span>${item.intervalKm.toLocaleString()} km</span></div>` : ''}
+        ${item.intervalMonths ? `<div class="info-row"><span class="info-key">Every (months)</span><span>${item.intervalMonths} months</span></div>` : ''}
+        <div class="info-row"><span class="info-key">Last Done</span><span>${formatDate(item.lastDate)}</span></div>
+        <div class="info-row"><span class="info-key">Last Mileage</span><span>${item.lastMileage ? item.lastMileage.toLocaleString() + ' km' : '—'}</span></div>
+        <div class="info-row"><span class="info-key">Next Due</span><span>${getDueInfo(item) || '—'}</span></div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">About this service</div>
+      <p style="font-size:13px; line-height:1.6; color:var(--text);">${item.desc || 'No description available.'}</p>
+    </div>
+
+    ${item.tips && item.tips.length ? `
+    <div class="detail-section">
+      <div class="detail-section-title">💡 Tips & Warnings</div>
+      <div class="tips-list">
+        ${item.tips.map(t => `<div class="tip-item"><span class="tip-icon">•</span><span>${t}</span></div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${historyForItem.length ? `
+    <div class="detail-section">
+      <div class="detail-section-title">Service History (${historyForItem.length})</div>
+      <div class="info-list">
+        ${historyForItem.slice(0,5).map(h => `
+          <div class="info-row">
+            <span class="info-key">${formatDate(h.date)}</span>
+            <span>${h.mileage ? Number(h.mileage).toLocaleString() + ' km' : '—'} ${h.cost ? '• ' + formatCurrency(h.cost) : ''}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>` : ''}
+
+    <div style="margin-top:20px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" onclick="openLogModal('${id}')">📋 Log Service</button>
+      <button class="btn btn-secondary btn-sm" onclick="editItem('${id}')">✏️ Edit</button>
+      ${!DEFAULT_ITEMS.find(d=>d.id===id) ? `<button class="btn btn-danger btn-sm" onclick="deleteItem('${id}')">🗑 Delete</button>` : ''}
+    </div>
+  `;
+
+  document.getElementById('detailPanel').classList.add('open');
+}
+
+function closeDetail() { document.getElementById('detailPanel').classList.remove('open'); }
+
+// ── History ───────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const hist = state.history.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  const tbody = document.getElementById('historyBody');
+  if (hist.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px;">No service history yet. Log your first service!</td></tr>';
+  } else {
+    tbody.innerHTML = hist.map(h => {
+      const item = state.items.find(i => i.id === h.itemId);
+      return `<tr>
+        <td>${formatDate(h.date)}</td>
+        <td><strong>${h.name}</strong>${item?.type === 'diesel' ? ' <span class="badge diesel-tag" style="font-size:10px;">⛽</span>' : ''}</td>
+        <td>${h.mileage ? Number(h.mileage).toLocaleString() + ' km' : '—'}</td>
+        <td>${formatCurrency(h.cost)}</td>
+        <td style="color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.notes || (h.shop ? '@ ' + h.shop : '—')}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteHistory('${h.id}')">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Timeline
+  const timeline = document.getElementById('historyTimeline');
+  timeline.innerHTML = hist.slice(0, 15).map((h, idx) => `
+    <div class="tl-item">
+      <div class="tl-line">
+        <div class="tl-dot" style="background:${h.cost ? 'var(--accent)' : 'var(--accent2)'}"></div>
+        ${idx < hist.length - 1 ? '<div class="tl-bar"></div>' : ''}
+      </div>
+      <div class="tl-content">
+        <div class="tl-date">${formatDate(h.date)} ${h.mileage ? '• ' + Number(h.mileage).toLocaleString() + ' km' : ''}</div>
+        <div class="tl-title">${h.name}</div>
+        <div class="tl-note">${h.shop ? '@ ' + h.shop : ''} ${h.cost ? '• ' + formatCurrency(h.cost) : ''} ${h.notes ? '• ' + h.notes : ''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteHistory(id) {
+  if (!confirm('Delete this history entry?')) return;
+  state.history = state.history.filter(h => h.id !== id);
+  save();
+  renderHistory();
+}
+
+// ── Log Modal ──────────────────────────────────────────────────────────────────
+function openLogModal(preselect) {
+  const sel = document.getElementById('logItem');
+  sel.innerHTML = state.items.map(i => `<option value="${i.id}">${i.name}${i.type==='diesel' ? ' ⛽' : ''}</option>`).join('');
+  if (preselect) sel.value = preselect;
+  document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('logMileage').value = state.profile.mileage || '';
+  document.getElementById('logCost').value = '';
+  document.getElementById('logShop').value = '';
+  document.getElementById('logNotes').value = '';
+  document.getElementById('logModal').classList.add('open');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function saveLog() {
+  const itemId = document.getElementById('logItem').value;
+  const date = document.getElementById('logDate').value;
+  const mileage = parseInt(document.getElementById('logMileage').value) || 0;
+  if (!date) { alert('Please enter a date.'); return; }
+
+  const item = state.items.find(i => i.id === itemId);
+  if (!item) return;
+
+  // Update item's last service
+  item.lastDate = date;
+  if (mileage) item.lastMileage = mileage;
+  if (mileage > (state.profile.mileage || 0)) state.profile.mileage = mileage;
+
+  state.history.unshift({
+    id: Date.now().toString(),
+    itemId,
+    name: item.name,
+    date,
+    mileage,
+    cost: document.getElementById('logCost').value,
+    shop: document.getElementById('logShop').value,
+    notes: document.getElementById('logNotes').value,
+  });
+
+  save();
+  closeModal('logModal');
+  renderDashboard();
+  alert(`✓ Service logged: ${item.name}`);
+}
+
+// ── Add/Edit Maintenance Modal ─────────────────────────────────────────────────
+function openAddMaintModal() {
+  state.editingId = null;
+  document.getElementById('addMaintTitle').textContent = '+ Add Maintenance Item';
+  document.getElementById('amName').value = '';
+  document.getElementById('amCategory').value = 'Engine';
+  document.getElementById('amType').value = 'general';
+  document.getElementById('amIntervalKm').value = '';
+  document.getElementById('amIntervalMonths').value = '';
+  document.getElementById('amLastDate').value = '';
+  document.getElementById('amLastMileage').value = '';
+  document.getElementById('amDesc').value = '';
+  document.getElementById('addMaintModal').classList.add('open');
+}
+
+function editItem(id) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  state.editingId = id;
+  document.getElementById('addMaintTitle').textContent = '✏️ Edit: ' + item.name;
+  document.getElementById('amName').value = item.name;
+  document.getElementById('amCategory').value = item.category;
+  document.getElementById('amType').value = item.type;
+  document.getElementById('amIntervalKm').value = item.intervalKm || '';
+  document.getElementById('amIntervalMonths').value = item.intervalMonths || '';
+  document.getElementById('amLastDate').value = item.lastDate || '';
+  document.getElementById('amLastMileage').value = item.lastMileage || '';
+  document.getElementById('amDesc').value = item.desc || '';
+  closeDetail();
+  document.getElementById('addMaintModal').classList.add('open');
+}
+
+function saveMaintItem() {
+  const name = document.getElementById('amName').value.trim();
+  if (!name) { alert('Please enter a name.'); return; }
+  const newItem = {
+    id: state.editingId || ('custom-' + Date.now()),
+    name,
+    category: document.getElementById('amCategory').value,
+    type: document.getElementById('amType').value,
+    intervalKm: parseInt(document.getElementById('amIntervalKm').value) || 0,
+    intervalMonths: parseInt(document.getElementById('amIntervalMonths').value) || 0,
+    lastDate: document.getElementById('amLastDate').value,
+    lastMileage: parseInt(document.getElementById('amLastMileage').value) || 0,
+    desc: document.getElementById('amDesc').value,
+    tips: []
+  };
+
+  if (state.editingId) {
+    const idx = state.items.findIndex(i => i.id === state.editingId);
+    if (idx >= 0) state.items[idx] = newItem;
+  } else {
+    state.items.push(newItem);
+  }
+
+  save();
+  closeModal('addMaintModal');
+  renderMaintenance();
+}
+
+function deleteItem(id) {
+  if (!confirm('Delete this maintenance item?')) return;
+  state.items = state.items.filter(i => i.id !== id);
+  save();
+  closeDetail();
+  renderMaintenance();
+}
+
+// ── Profile ───────────────────────────────────────────────────────────────────
+function loadProfile() {
+  const p = state.profile;
+  document.getElementById('pMake').value = p.make || '';
+  document.getElementById('pModel').value = p.model || '';
+  document.getElementById('pYear').value = p.year || '';
+  document.getElementById('pPlate').value = p.plate || '';
+  document.getElementById('pEngine').value = p.engine || '';
+  document.getElementById('pDieselType').value = p.dieselType || 'standard';
+  document.getElementById('pTurbo').value = p.turbo || 'yes';
+  document.getElementById('pMileage').value = p.mileage || '';
+  document.getElementById('pNotes').value = p.notes || '';
+}
+
+function saveProfile() {
+  state.profile = {
+    make: document.getElementById('pMake').value,
+    model: document.getElementById('pModel').value,
+    year: document.getElementById('pYear').value,
+    plate: document.getElementById('pPlate').value,
+    engine: document.getElementById('pEngine').value,
+    dieselType: document.getElementById('pDieselType').value,
+    turbo: document.getElementById('pTurbo').value,
+    mileage: parseInt(document.getElementById('pMileage').value) || 0,
+    notes: document.getElementById('pNotes').value,
+  };
+  save();
+  updateSidebar();
+  document.getElementById('profileSaved').style.display = 'block';
+  setTimeout(() => document.getElementById('profileSaved').style.display = 'none', 3000);
+}
+
+function resetToDefaults() {
+  if (!confirm('Reset all maintenance intervals to defaults? Your history will be kept.')) return;
+  state.items = DEFAULT_ITEMS.map(d => {
+    const existing = state.items.find(i => i.id === d.id);
+    return { ...d, lastDate: existing?.lastDate || '', lastMileage: existing?.lastMileage || 0 };
+  });
+  save();
+  alert('Default intervals restored.');
+}
+
+function showAbout() {
+  alert('DieselTrack v1.0\n\nA diesel car maintenance tracker with:\n• 10 diesel-specific maintenance items\n• Service history logging\n• Progress tracking by km & date\n• All data stored locally in your browser\n\nBuilt for diesel vehicle owners who want to stay on top of their maintenance schedule.');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+load();
+updateSidebar();
+renderDashboard();
+</script>
+</body>
+</html>
