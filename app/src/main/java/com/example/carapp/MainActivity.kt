@@ -4,16 +4,19 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.*
 import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
 import androidx.navigation.navArgument
-import com.example.carapp.ui.navigation.Screen
+import com.example.carapp.ui.navigation.*
 import com.example.carapp.ui.screens.*
 import com.example.carapp.ui.theme.CarMaintenanceTheme
 import com.example.carapp.viewmodel.CarViewModel
@@ -24,7 +27,6 @@ class MainActivity : ComponentActivity() {
     private val carViewModel: CarViewModel by viewModels {
         CarViewModel.Factory((application as CarMaintenanceApp).repository)
     }
-
     private val maintenanceViewModel: MaintenanceViewModel by viewModels {
         MaintenanceViewModel.Factory((application as CarMaintenanceApp).repository)
     }
@@ -33,24 +35,56 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             CarMaintenanceTheme {
-                Surface(
+                val navController = rememberNavController()
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+
+                Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    val navController = rememberNavController()
-
-                    NavHost(navController = navController, startDestination = Screen.Home.route) {
-
+                    bottomBar = {
+                        if (currentRoute in bottomNavRoutes) {
+                            AppBottomNavigationBar(navController)
+                        }
+                    }
+                ) { innerPadding ->
+                    NavHost(
+                        navController = navController,
+                        startDestination = Screen.Home.route,
+                        modifier = Modifier.padding(innerPadding),
+                        enterTransition = { fadeIn(tween(200)) + slideInHorizontally(tween(200)) { it / 4 } },
+                        exitTransition = { fadeOut(tween(150)) },
+                        popEnterTransition = { fadeIn(tween(200)) },
+                        popExitTransition = { fadeOut(tween(150)) + slideOutHorizontally(tween(200)) { it / 4 } }
+                    ) {
                         composable(Screen.Home.route) {
                             HomeScreen(
                                 carViewModel = carViewModel,
                                 maintenanceViewModel = maintenanceViewModel,
-                                onNavigateToCarList = { navController.navigate(Screen.CarList.route) },
-                                onNavigateToHistory = { carId ->
-                                    navController.navigate(Screen.MaintenanceHistory.route(carId))
-                                },
                                 onNavigateToAddMaintenance = { carId ->
                                     navController.navigate(Screen.AddEditMaintenance.route(carId))
+                                },
+                                onNavigateToAddCar = {
+                                    navController.navigate(Screen.AddEditCar.routeWithId())
+                                },
+                                onNavigateToHistory = {
+                                    navController.navigate(Screen.History.route) {
+                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            )
+                        }
+
+                        composable(Screen.History.route) {
+                            HistoryTabScreen(
+                                carViewModel = carViewModel,
+                                maintenanceViewModel = maintenanceViewModel,
+                                onNavigateToAddMaintenance = { carId ->
+                                    navController.navigate(Screen.AddEditMaintenance.route(carId))
+                                },
+                                onNavigateToEditMaintenance = { carId, recordId ->
+                                    navController.navigate(Screen.AddEditMaintenance.route(carId, recordId))
                                 },
                                 onNavigateToAddCar = {
                                     navController.navigate(Screen.AddEditCar.routeWithId())
@@ -61,15 +95,18 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.CarList.route) {
                             CarListScreen(
                                 carViewModel = carViewModel,
-                                onNavigateBack = { navController.popBackStack() },
                                 onNavigateToAddCar = {
                                     navController.navigate(Screen.AddEditCar.routeWithId())
                                 },
                                 onNavigateToEditCar = { carId ->
                                     navController.navigate(Screen.AddEditCar.routeWithId(carId))
                                 },
-                                onNavigateToHistory = { carId ->
-                                    navController.navigate(Screen.MaintenanceHistory.route(carId))
+                                onNavigateToHistory = {
+                                    navController.navigate(Screen.History.route) {
+                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
                             )
                         }
@@ -77,8 +114,7 @@ class MainActivity : ComponentActivity() {
                         composable(
                             route = Screen.AddEditCar.route,
                             arguments = listOf(navArgument("carId") {
-                                type = NavType.LongType
-                                defaultValue = -1L
+                                type = NavType.LongType; defaultValue = -1L
                             })
                         ) { backStackEntry ->
                             val carId = backStackEntry.arguments?.getLong("carId")
@@ -90,32 +126,10 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(
-                            route = Screen.MaintenanceHistory.route,
-                            arguments = listOf(navArgument("carId") { type = NavType.LongType })
-                        ) { backStackEntry ->
-                            val carId = backStackEntry.arguments!!.getLong("carId")
-                            MaintenanceHistoryScreen(
-                                carId = carId,
-                                carViewModel = carViewModel,
-                                maintenanceViewModel = maintenanceViewModel,
-                                onNavigateBack = { navController.popBackStack() },
-                                onNavigateToAddMaintenance = { id ->
-                                    navController.navigate(Screen.AddEditMaintenance.route(id))
-                                },
-                                onNavigateToEditMaintenance = { cid, rid ->
-                                    navController.navigate(Screen.AddEditMaintenance.route(cid, rid))
-                                }
-                            )
-                        }
-
-                        composable(
                             route = Screen.AddEditMaintenance.route,
                             arguments = listOf(
                                 navArgument("carId") { type = NavType.LongType },
-                                navArgument("recordId") {
-                                    type = NavType.LongType
-                                    defaultValue = -1L
-                                }
+                                navArgument("recordId") { type = NavType.LongType; defaultValue = -1L }
                             )
                         ) { backStackEntry ->
                             val carId = backStackEntry.arguments!!.getLong("carId")
