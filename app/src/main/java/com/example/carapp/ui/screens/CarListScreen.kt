@@ -83,7 +83,7 @@ fun CarListScreen(
                     SwipeableCarCard(
                         car = car,
                         isSelected = car.id == (selectedCarId ?: cars.firstOrNull()?.id),
-                        modifier = Modifier.animateItem(tween(300)),
+                        modifier = Modifier.animateItemPlacement(tween(300)),
                         onEdit = { onNavigateToEditCar(car.id) },
                         onSelect = {
                             carViewModel.selectCar(car.id)

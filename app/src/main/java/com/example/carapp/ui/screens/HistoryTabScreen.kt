@@ -138,7 +138,7 @@ fun HistoryTabScreen(
                         items(filtered, key = { it.id }) { record ->
                             SwipeableRecordCard(
                                 record = record,
-                                modifier = Modifier.animateItem(tween(300)),
+                                modifier = Modifier.animateItemPlacement(tween(300)),
                                 onEdit = {
                                     selectedCar?.let { car ->
                                         onNavigateToEditMaintenance(car.id, record.id)
@@ -279,8 +279,7 @@ private fun ExpandableRecordCard(record: MaintenanceRecord, onEdit: () -> Unit) 
                 Column {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
 
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         if (record.mileageAtService > 0)
                             DetailItem("Mileage", "%,d mi".format(record.mileageAtService))
                         if (record.cost > 0)
@@ -303,8 +302,7 @@ private fun ExpandableRecordCard(record: MaintenanceRecord, onEdit: () -> Unit) 
                     if (nextDate != null || nextMileage != null) {
                         Spacer(Modifier.height(8.dp))
                         SectionLabel("Next Service")
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             nextDate?.let { DetailItem("Date", dateFormat.format(Date(it))) }
                             nextMileage?.let { DetailItem("Mileage", "%,d mi".format(it)) }
                         }
