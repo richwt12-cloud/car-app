@@ -3,6 +3,7 @@ package com.example.carapp.ui.screens
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -185,11 +186,13 @@ private fun CarCard(
     onEdit: () -> Unit,
     onSelect: () -> Unit
 ) {
-    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
-
     ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        border = if (isSelected) ButtonDefaults.outlinedButtonBorder else null
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.medium)
+                else Modifier
+            )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
