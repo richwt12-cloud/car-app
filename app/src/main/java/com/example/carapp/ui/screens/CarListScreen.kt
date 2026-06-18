@@ -19,11 +19,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.carapp.data.model.Car
+import com.example.carapp.ui.theme.GradientDeep
+import com.example.carapp.ui.theme.GradientLight
 import com.example.carapp.viewmodel.CarViewModel
 import kotlinx.coroutines.launch
 
@@ -43,18 +46,26 @@ fun CarListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.background(
+                    Brush.linearGradient(
+                        colors = listOf(GradientDeep, GradientLight),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
+                ),
                 title = {
                     Column {
                         Text("My Garage", style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold)
+                            fontWeight = FontWeight.ExtraBold, color = Color.White)
                         Text("${cars.size} car${if (cars.size != 1) "s" else ""}",
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
+                            color = Color.White.copy(alpha = 0.75f))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
+                    titleContentColor = Color.White
                 )
             )
         },
@@ -185,7 +196,9 @@ private fun SwipeableCarCard(
 private fun CarCard(car: Car, isSelected: Boolean, onEdit: () -> Unit, onSelect: () -> Unit) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val gradient = Brush.linearGradient(
-        colors = listOf(primaryColor, primaryColor.copy(alpha = 0.6f))
+        colors = listOf(GradientDeep, GradientLight),
+        start = Offset(0f, 0f),
+        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
     )
 
     Card(

@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,12 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.max
+
+private val heroGradient = Brush.linearGradient(
+    colors = listOf(GradientDeep, GradientMid, GradientLight),
+    start = Offset(0f, 0f),
+    end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,22 +63,32 @@ fun HomeScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Good day!", style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
-                        Text("Car Maintenance", style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold)
+                        Text(
+                            "Good day!",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White.copy(alpha = 0.75f)
+                        )
+                        Text(
+                            "Car Maintenance",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
                     }
                 },
                 actions = {
                     if (cars.size > 1) {
-                        CarSwitcherButton(cars = cars, selectedCar = selectedCar,
-                            onCarSelected = { carViewModel.selectCar(it.id) })
+                        CarSwitcherButton(
+                            cars = cars,
+                            selectedCar = selectedCar,
+                            onCarSelected = { carViewModel.selectCar(it.id) }
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = GradientDeep,
+                    titleContentColor = Color.White,
+                    actionIconContentColor = Color.White
                 )
             )
         },
@@ -86,21 +103,20 @@ fun HomeScreen(
         }
     ) { padding ->
         if (cars.isEmpty()) {
-            EmptyGarageScreen(onNavigateToAddCar = onNavigateToAddCar,
-                modifier = Modifier.padding(padding))
+            EmptyGarageScreen(
+                onNavigateToAddCar = onNavigateToAddCar,
+                modifier = Modifier.padding(padding)
+            )
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(bottom = 100.dp),
-                verticalArrangement = Arrangement.spacedBy(0.dp)
+                contentPadding = PaddingValues(bottom = 100.dp)
             ) {
                 item {
                     selectedCar?.let { car ->
-                        CarHeroCard(
+                        CarHeroSection(
                             car = car,
-                            recordCount = records.size,
-                            onEditCar = onNavigateToAddCar,
-                            modifier = Modifier.padding(16.dp)
+                            recordCount = records.size
                         )
                     }
                 }
@@ -110,7 +126,7 @@ fun HomeScreen(
                         QuickLogSection(
                             car = car,
                             onNavigateToAddMaintenance = onNavigateToAddMaintenance,
-                            modifier = Modifier.padding(horizontal = 16.dp)
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
                         )
                     }
                 }
@@ -119,7 +135,7 @@ fun HomeScreen(
                     item {
                         YearSpendBanner(
                             records = records,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                         )
                     }
                 }
@@ -129,12 +145,15 @@ fun HomeScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                .padding(start = 16.dp, end = 8.dp, top = 18.dp, bottom = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("What's Due", style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold)
+                            Text(
+                                "What's Due",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
                             TextButton(onClick = onNavigateToHistory) { Text("View all") }
                         }
                     }
@@ -143,7 +162,7 @@ fun HomeScreen(
                             record = record,
                             currentMileage = selectedCar?.currentMileage ?: 0,
                             onClick = onNavigateToHistory,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
                         )
                     }
                 } else if (selectedCar != null) {
@@ -159,90 +178,83 @@ fun HomeScreen(
     }
 }
 
-// ── Hero Card ──────────────────────────────────────────────────────────────
+// ── Hero Section ───────────────────────────────────────────────────────────
 
 @Composable
-private fun CarHeroCard(
-    car: Car,
-    recordCount: Int,
-    onEditCar: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val gradient = Brush.linearGradient(
-        colors = listOf(primaryColor, primaryColor.copy(alpha = 0.55f))
-    )
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+private fun CarHeroSection(car: Car, recordCount: Int) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
+            .background(heroGradient)
     ) {
-        Box(
+        // Large watermark car icon
+        Icon(
+            Icons.Default.DirectionsCar,
+            contentDescription = null,
             modifier = Modifier
-                .fillMaxWidth()
-                .background(gradient)
-        ) {
-            Icon(
-                Icons.Default.DirectionsCar,
-                contentDescription = null,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(130.dp)
-                    .padding(bottom = 8.dp, end = 12.dp),
-                tint = Color.White.copy(alpha = 0.1f)
+                .size(190.dp)
+                .align(Alignment.CenterEnd)
+                .offset(x = 28.dp),
+            tint = Color.White.copy(alpha = 0.05f)
+        )
+
+        Column(modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp)) {
+            // Year · Color tag line
+            Text(
+                buildString {
+                    append(car.year.toString())
+                    if (car.color.isNotBlank()) append("  ·  ${car.color}")
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.7f)
             )
-            Column(modifier = Modifier.padding(20.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("${car.year}  •  ${if (car.color.isNotBlank()) car.color else ""}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.75f))
-                        Text("${car.make} ${car.model}",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White)
-                    }
-                    FilledIconButton(
-                        onClick = onEditCar,
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = Color.White.copy(alpha = 0.18f),
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Icon(Icons.Default.Edit, "Edit car", modifier = Modifier.size(18.dp))
-                    }
-                }
 
-                Spacer(Modifier.height(20.dp))
+            // Make + Model — big and bold
+            Text(
+                "${car.make} ${car.model}",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
+            )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    HeroPill(label = "Mileage", value = "%,d mi".format(car.currentMileage))
-                    if (car.licensePlate.isNotBlank()) {
-                        HeroPill(label = "Plate", value = car.licensePlate)
-                    }
-                    HeroPill(label = "Services", value = recordCount.toString())
+            Spacer(Modifier.height(22.dp))
+
+            // Stat pills row
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                HeroPill(label = "Mileage", value = "%,d mi".format(car.currentMileage))
+                if (car.licensePlate.isNotBlank()) {
+                    HeroPill(label = "Plate", value = car.licensePlate)
                 }
+                HeroPill(label = "Services", value = recordCount.toString())
             }
+
+            Spacer(Modifier.height(24.dp))
         }
     }
 }
 
 @Composable
 private fun HeroPill(label: String, value: String) {
-    Surface(shape = RoundedCornerShape(50.dp), color = Color.White.copy(alpha = 0.18f)) {
+    Surface(
+        shape = RoundedCornerShape(50.dp),
+        color = Color.White.copy(alpha = 0.15f)
+    ) {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(value, style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold, color = Color.White)
-            Text(label, style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.8f))
+            Text(
+                value,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
+            )
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.75f)
+            )
         }
     }
 }
@@ -265,12 +277,18 @@ private fun QuickLogSection(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Text("Quick Log", style = MaterialTheme.typography.titleSmall,
+        Text(
+            "Quick Log",
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 10.dp, top = 4.dp))
+            modifier = Modifier.padding(bottom = 10.dp)
+        )
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(quickServices) { type ->
-                QuickServiceChip(serviceType = type, onClick = { onNavigateToAddMaintenance(car.id) })
+                QuickServiceChip(
+                    serviceType = type,
+                    onClick = { onNavigateToAddMaintenance(car.id) }
+                )
             }
         }
     }
@@ -281,18 +299,22 @@ private fun QuickServiceChip(serviceType: ServiceType, onClick: () -> Unit) {
     val color = serviceTypeColor(serviceType)
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        color = color.copy(alpha = 0.1f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.35f))
+        shape = RoundedCornerShape(14.dp),
+        color = color.copy(alpha = 0.08f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.3f))
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             ServiceTypeIcon(serviceType, modifier = Modifier.size(16.dp), tint = color)
-            Text(serviceType.displayName, style = MaterialTheme.typography.labelMedium,
-                color = color, fontWeight = FontWeight.Medium)
+            Text(
+                serviceType.displayName,
+                style = MaterialTheme.typography.labelMedium,
+                color = color,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
@@ -314,10 +336,8 @@ private fun YearSpendBanner(records: List<MaintenanceRecord>, modifier: Modifier
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        SpendCard("$year Spend", currency.format(yearSpend),
-            Icons.Default.CalendarMonth, Modifier.weight(1f))
-        SpendCard("All Time", currency.format(allTimeSpend),
-            Icons.Default.Receipt, Modifier.weight(1f))
+        SpendCard("$year Spend", currency.format(yearSpend), Icons.Default.CalendarMonth, Modifier.weight(1f))
+        SpendCard("All Time", currency.format(allTimeSpend), Icons.Default.Receipt, Modifier.weight(1f))
     }
 }
 
@@ -328,25 +348,36 @@ private fun SpendCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
-    ) {
+    ElevatedCard(modifier = modifier, shape = RoundedCornerShape(18.dp)) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(icon, null, modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon, null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
             Column {
-                Text(value, style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer)
-                Text(label, style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f))
+                Text(
+                    value,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -366,7 +397,7 @@ private fun UpcomingServiceCard(
     val isDueByDate = record.nextServiceDate != null && record.nextServiceDate <= today
     val isDueByMileage = record.nextServiceMileage != null && currentMileage >= record.nextServiceMileage
     val isOverdue = isDueByDate || isDueByMileage
-    val statusColor = if (isOverdue) OverduRed else UpcomingOrange
+    val statusColor = if (isOverdue) OverdueRed else WarningAmber
     val serviceColor = serviceTypeColor(record.serviceType)
 
     val mileageProgress = record.nextServiceMileage?.let { nextMi ->
@@ -380,26 +411,20 @@ private fun UpcomingServiceCard(
     val progress = max(mileageProgress ?: 0f, dateProgress ?: 0f)
     val animatedProgress by animateFloatAsState(progress, tween(900, easing = FastOutSlowInEasing), label = "p")
 
-    Card(
+    ElevatedCard(
         modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp,
-            statusColor.copy(alpha = 0.3f))
+        shape = RoundedCornerShape(18.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
                         .background(serviceColor.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    ServiceTypeIcon(record.serviceType,
-                        modifier = Modifier.size(22.dp), tint = serviceColor)
+                    ServiceTypeIcon(record.serviceType, modifier = Modifier.size(24.dp), tint = serviceColor)
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -423,7 +448,7 @@ private fun UpcomingServiceCard(
                     }
                 }
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
+                    shape = RoundedCornerShape(8.dp),
                     color = statusColor.copy(alpha = 0.12f)
                 ) {
                     Text(
@@ -431,25 +456,32 @@ private fun UpcomingServiceCard(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         color = statusColor,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.ExtraBold
                     )
                 }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(14.dp))
             LinearProgressIndicator(
                 progress = { animatedProgress },
-                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                modifier = Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(4.dp)),
                 color = statusColor,
-                trackColor = statusColor.copy(alpha = 0.12f)
+                trackColor = statusColor.copy(alpha = 0.1f)
             )
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 5.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Last service", style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("${(animatedProgress * 100).toInt()}% of interval",
-                    style = MaterialTheme.typography.labelSmall, color = statusColor)
+                Text(
+                    "Last service",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    "${(animatedProgress * 100).toInt()}% of interval",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = statusColor,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
@@ -459,30 +491,29 @@ private fun UpcomingServiceCard(
 
 @Composable
 private fun AllClearCard(onViewHistory: () -> Unit, modifier: Modifier = Modifier) {
-    Card(
+    ElevatedCard(
         modifier = modifier.fillMaxWidth().clickable(onClick = onViewHistory),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = GoodGreen.copy(alpha = 0.08f)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, GoodGreen.copy(alpha = 0.25f))
+        shape = RoundedCornerShape(18.dp)
     ) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(GoodGreen.copy(alpha = 0.15f)),
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(SuccessGreen.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.CheckCircle, null,
-                    tint = GoodGreen, modifier = Modifier.size(26.dp))
+                    tint = SuccessGreen, modifier = Modifier.size(28.dp))
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("All caught up!", fontWeight = FontWeight.Bold,
-                    color = GoodGreen)
-                Text("No upcoming maintenance due",
+                Text("All caught up!", fontWeight = FontWeight.Bold, color = SuccessGreen)
+                Text(
+                    "No upcoming maintenance due",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             Icon(Icons.Default.ChevronRight, null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -501,24 +532,34 @@ private fun EmptyGarageScreen(onNavigateToAddCar: () -> Unit, modifier: Modifier
     ) {
         Box(
             modifier = Modifier
-                .size(100.dp)
-                .clip(RoundedCornerShape(28.dp))
+                .size(110.dp)
+                .clip(RoundedCornerShape(32.dp))
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.DirectionsCar, null,
-                modifier = Modifier.size(56.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer)
+            Icon(
+                Icons.Default.DirectionsCar, null,
+                modifier = Modifier.size(62.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
         Spacer(Modifier.height(24.dp))
-        Text("Your garage is empty", style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold)
+        Text(
+            "Your garage is empty",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.ExtraBold
+        )
         Spacer(Modifier.height(8.dp))
-        Text("Add a car to start tracking maintenance",
+        Text(
+            "Add a car to start tracking maintenance",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Spacer(Modifier.height(32.dp))
-        Button(onClick = onNavigateToAddCar, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)) {
+        Button(
+            onClick = onNavigateToAddCar,
+            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)
+        ) {
             Icon(Icons.Default.Add, null)
             Spacer(Modifier.width(8.dp))
             Text("Add Your Car", style = MaterialTheme.typography.labelLarge)
@@ -537,7 +578,7 @@ private fun CarSwitcherButton(
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }) {
-            Icon(Icons.Default.SwapHoriz, "Switch car")
+            Icon(Icons.Default.SwapHoriz, "Switch car", tint = Color.White)
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             cars.forEach { car ->

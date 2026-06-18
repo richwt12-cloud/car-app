@@ -15,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -25,6 +27,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.carapp.data.model.MaintenanceRecord
 import com.example.carapp.data.model.ServiceType
+import com.example.carapp.ui.theme.GradientDeep
+import com.example.carapp.ui.theme.GradientLight
 import com.example.carapp.ui.theme.serviceTypeColor
 import com.example.carapp.viewmodel.CarViewModel
 import com.example.carapp.viewmodel.MaintenanceViewModel
@@ -101,17 +105,28 @@ fun AddEditMaintenanceScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEdit) "Edit Record" else "Log Service") },
+                modifier = Modifier.background(
+                    Brush.linearGradient(
+                        colors = listOf(GradientDeep, GradientLight),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
+                ),
+                title = {
+                    Text(
+                        if (isEdit) "Edit Record" else "Log Service",
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "Back")
+                        Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
                     }
                 },
                 actions = {
                     TextButton(onClick = ::save,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
+                        colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
                     ) {
                         Icon(Icons.Default.Save, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
@@ -119,9 +134,11 @@ fun AddEditMaintenanceScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
                 )
             )
         }

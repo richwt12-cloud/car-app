@@ -16,12 +16,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.carapp.data.model.Car
 import com.example.carapp.data.model.MaintenanceRecord
 import com.example.carapp.data.model.ServiceType
+import com.example.carapp.ui.theme.GradientDeep
+import com.example.carapp.ui.theme.GradientLight
 import com.example.carapp.ui.theme.serviceTypeColor
 import com.example.carapp.viewmodel.CarViewModel
 import com.example.carapp.viewmodel.MaintenanceViewModel
@@ -57,14 +61,21 @@ fun HistoryTabScreen(
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.background(
+                    Brush.linearGradient(
+                        colors = listOf(GradientDeep, GradientLight),
+                        start = Offset(0f, 0f),
+                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    )
+                ),
                 title = {
                     Column {
-                        Text("History")
+                        Text("History", fontWeight = FontWeight.ExtraBold, color = Color.White)
                         selectedCar?.let {
                             Text(
                                 "${it.year} ${it.make} ${it.model}",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                                color = Color.White.copy(alpha = 0.75f)
                             )
                         }
                     }
@@ -79,9 +90,10 @@ fun HistoryTabScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
+                    titleContentColor = Color.White,
+                    actionIconContentColor = Color.White
                 )
             )
         },
@@ -201,8 +213,8 @@ private fun DeleteBackground() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .clip(MaterialTheme.shapes.medium)
-            .padding(horizontal = 4.dp),
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.errorContainer),
         contentAlignment = Alignment.CenterEnd
     ) {
         Row(
@@ -212,9 +224,11 @@ private fun DeleteBackground() {
                 .fillMaxHeight()
                 .padding(end = 20.dp)
         ) {
-            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.White)
+            Icon(Icons.Default.Delete, contentDescription = "Delete",
+                tint = MaterialTheme.colorScheme.onErrorContainer)
             Spacer(Modifier.width(8.dp))
-            Text("Delete", color = Color.White, fontWeight = FontWeight.Medium)
+            Text("Delete", color = MaterialTheme.colorScheme.onErrorContainer,
+                fontWeight = FontWeight.Bold)
         }
     }
 }
